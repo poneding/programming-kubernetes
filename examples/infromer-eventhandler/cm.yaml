@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: informer-eventhandler-cm
+  namespace: default
+  labels:
+    foo: bar
+data:
+  foo: bar1
