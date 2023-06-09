@@ -35,7 +35,7 @@ func main() {
 	df.Delete(u1)
 
 	fmt.Printf("df.List(): %v\n", df.List())
-	popFunc := func(pop interface{}) error {
+	popFunc := func(pop interface{}, isInInitialList bool) error {
 		for _, delta := range pop.(cache.Deltas) {
 			switch delta.Type {
 			case cache.Added:

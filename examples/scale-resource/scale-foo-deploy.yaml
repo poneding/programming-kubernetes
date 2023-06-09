@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: scale-foo
+  name: scale-foo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scale-foo
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: scale-foo
+    spec:
+      containers:
+      - image: nginx
+        name: nginx

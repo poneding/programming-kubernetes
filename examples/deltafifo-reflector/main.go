@@ -45,7 +45,7 @@ func main() {
 	}()
 
 	for {
-		popFunc := func(pop interface{}) error {
+		popFunc := func(pop interface{}, isInInitialList bool) error {
 			for _, delta := range pop.(cache.Deltas) {
 				pod := delta.Object.(*corev1.Pod)
 				key, _ := df.KeyOf(pod)

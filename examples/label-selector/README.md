@@ -1,3 +1,12 @@
+# label-selector
+
+[<- 返回上级](../index.md)
+
+标签选择器，一般用于通过 label（本质是 `map[string]string`） 获取过滤资源列表。
+
+## 代码示例
+
+```go
 package main
 
 import (
@@ -53,3 +62,4 @@ func main() {
 		fmt.Printf("l1 %v not equals l2 %v\n", l1, l2)
 	}
 }
+```

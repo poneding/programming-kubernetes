@@ -5,15 +5,19 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/tools/clientcmd"
+
+	// "k8s.io/client-go/tools/clientcmd"
+
+	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
 func main() {
 	// 从本地 kubeconfig 文件中加载配置
-	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-	if err != nil {
-		panic(err.Error())
-	}
+	// config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+	config := controllerruntime.GetConfigOrDie()
 
 	// 创建 discovery.DiscoveryClient
 	client := discovery.NewDiscoveryClientForConfigOrDie(config)

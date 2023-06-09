@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	"time"
 )
 
 func main() {
@@ -22,12 +22,16 @@ func main() {
 		context.Background(),
 		metav1.ListOptions{
 			LabelSelector: "foo=bar",
+			// Watch:         true, // 即使这里不设置，调用 Watch 也会将其设置为 true
+			TimeoutSeconds: &[]int64{30}[0], // 持续 Watch 的时间
+			Limit:          10,              // 一次 Watch 的最多返回的资源数量
 		},
 	)
 	if err != nil {
 		panic(err)
 	}
 
+	stop := make(chan struct{})
 	go func() {
 		for event := range watch.ResultChan() {
 			obj, ok := event.Object.(*corev1.ConfigMap)
@@ -37,9 +41,8 @@ func main() {
 			}
 			fmt.Printf("event: %s/%s %s\n", obj.GetNamespace(), obj.GetName(), event.Type)
 		}
+		stop <- struct{}{}
 	}()
 
-	for {
-		time.Sleep(time.Second)
-	}
+	<-stop
 }
