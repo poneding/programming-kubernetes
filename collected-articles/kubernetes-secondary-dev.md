@@ -2,7 +2,7 @@
 
 [<- 收藏文章](./index.md)
 
-> 本文转自 ShadowYD 的博客，[**原文**](https://juejin.cn/post/7203690731276517432)，版权归原作者所有。
+> 本文转自 ShadowYD 的文章，版权归原作者所有。[**👉🏻 原文地址**](https://juejin.cn/post/7203690731276517432)
 
 ## **1. 简介**
 
@@ -91,7 +91,7 @@ ClientSet 是比较常用的一个 client，常用于对 K8s 内部资源做 CRU
 
 ```go
 func main () {
-// 使用的是上文提到的配置加载对象
+    // 使用的是上文提到的配置加载对象
     cliset := NewK8sConfig().InitClient()
     configMaps, err := cliset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
     if err != nil {
@@ -157,10 +157,10 @@ var deployTpl string
 // dynamic client 创建 Deploy
 func main()  {
 
-// 动态客户端
+    // 动态客户端
    dynamicCli := config.NewK8sConfig().InitDynamicClient()
 
-// 可以随意指定集群拥有的资源, 进行创建
+    // 可以随意指定集群拥有的资源, 进行创建
    deployGVR := schema.GroupVersionResource{
       Group: "apps",
       Version: "v1",
@@ -198,13 +198,13 @@ import (
 
 func main() {
     client := config.NewK8sConfig().InitDiscoveryClient()
-// 可以看到当前集群的 gvr
+    // 可以看到当前集群的 gvr
     preferredResources, _ := client.ServerPreferredResources()
     for _, pr := range preferredResources {
         fmt.Println(pr.String())
     }
 
-// _, _, _ = client.ServerGroupsAndResources()
+    // _, _, _ = client.ServerGroupsAndResources()
 
 }
 ```
@@ -217,9 +217,7 @@ func main() {
 
 ### **3.2 Informer 架构图**
 
-> 该图其实还有下半部分是关于 **Custom Controller**, 想了解请跳转 👉Controller 源码解析。
-
-[https://mmbiz.qpic.cn/mmbiz/qFG6mghhA4aJpwMWCeGeSpkBWrQ0qdbHeticibOibu6iaoBDLBF10m8VRkzcOhpRBKNhawoF68rw35KdeLTlhs5iaOg/640?wx_fmt=other&wxfrom=5&wx_lazy=1&wx_co=1](https://mmbiz.qpic.cn/mmbiz/qFG6mghhA4aJpwMWCeGeSpkBWrQ0qdbHeticibOibu6iaoBDLBF10m8VRkzcOhpRBKNhawoF68rw35KdeLTlhs5iaOg/640?wx_fmt=other&wxfrom=5&wx_lazy=1&wx_co=1)
+> 该图其实还有下半部分是关于 **Custom Controller**, 想了解请跳转 [👉 Controller 源码解析](https://mmbiz.qpic.cn/mmbiz/qFG6mghhA4aJpwMWCeGeSpkBWrQ0qdbHeticibOibu6iaoBDLBF10m8VRkzcOhpRBKNhawoF68rw35KdeLTlhs5iaOg/640?wx_fmt=other&wxfrom=5&wx_lazy=1&wx_co=1)。
 
 上图的流程解析 :
 
@@ -258,7 +256,7 @@ import (
 
 // create pods list & watch
 func main() {
-// helper 只是一个类似上文演示的 config, 只要用于初始化各种客户端
+    // helper 只是一个类似上文演示的 config, 只要用于初始化各种客户端
     cliset := helper.InitK8SClient()
     lwc := cache.NewListWatchFromClient(cliset.CoreV1().RESTClient(), "pods", "kube-system", fields.Everything())
     watcher, err := lwc.Watch(metav1.ListOptions{})
@@ -354,22 +352,22 @@ func PodKeyFunc(obj interface{}) (string, error) {
 func main() {
     df := cache.NewDeltaFIFOWithOptions(cache.DeltaFIFOOptions{KeyFunction: PodKeyFunc})
 
-// ADD3个object 进入 fifo
+    // ADD3个object 进入 fifo
     pod1 := NewPod("pod-1", 1)
     pod2 := NewPod("pod-2", 2)
     pod3 := NewPod("pod-3", 3)
     df.Add(pod1)
     df.Add(pod2)
     df.Add(pod3)
-// Update pod-1
+    // Update pod-1
     pod1.Value = 11
     df.Update(pod1)
     df.Delete(pod1)
 
-// 当前df 的列表
+    // 当前df 的列表
     fmt.Println(df.List())
 
-// 循环抛出事件
+    // 循环抛出事件
     for {
         df.Pop(func(i interface{}) error {
         for _, delta := range i.(cache.Deltas) {
@@ -426,43 +424,43 @@ import (
 func main() {
 
     cliset := helper.InitK8SClient()
-// 使用 store 进行存储，这样本地才有一份数据；
-// 如果本地没有存储到被删除的资源， 则不需要 Pop 该资源的 Delete 事件；
-// 所以我们为了准确接收到delete时接收到 Delete 事件, 所以预先创建一下 store
-// cache.MetaNamespaceKeyFunc 是用于返回资源的唯一标识, {namespace}/{name} 或 {name}
+    // 使用 store 进行存储，这样本地才有一份数据；
+    // 如果本地没有存储到被删除的资源， 则不需要 Pop 该资源的 Delete 事件；
+    // 所以我们为了准确接收到delete时接收到 Delete 事件, 所以预先创建一下 store
+    // cache.MetaNamespaceKeyFunc 是用于返回资源的唯一标识, {namespace}/{name} 或 {name}
     store := cache.NewStore(cache.MetaNamespaceKeyFunc)
 
-// create list & watch Client
+    // create list & watch Client
     lwc := cache.NewListWatchFromClient(cliset.CoreV1().RESTClient(),
         helper.Resource,
         helper.Namespace,
         fields.Everything(),
     )
 
-// create deltafifo
+    // create deltafifo
     df := cache.NewDeltaFIFOWithOptions(
         cache.DeltaFIFOOptions{
             KeyFunction:  cache.MetaNamespaceKeyFunc,
             KnownObjects: store,
         })
 
-// crete reflector
+    // crete reflector
     rf := cache.NewReflector(lwc, &v1.Pod{}, df, time.Second*0)
     rsCH := make(chan struct{})
     go func() {
         rf.Run(rsCH)
     }()
 
-// fetch delta event
+    // fetch delta event
     for {
         df.Pop(func(i interface{}) error {
-// deltas
+        // deltas
         for _, d := range i.(cache.Deltas) {
             fmt.Println(d.Type, ":", d.Object.(*v1.Pod).Name,
                 "-", d.Object.(*v1.Pod).Status.Phase)
             switch d.Type {
             case cache.Sync, cache.Added:
-// 向store中添加对象
+                // 向store中添加对象
                 store.Add(d.Object)
             case cache.Updated:
                 store.Update(d.Object)
@@ -522,9 +520,9 @@ type threadSafeMap struct {
     lock  sync.RWMutex
     items map[string]interface{}
 
-// indexers maps a name to an IndexFunc
+    // indexers maps a name to an IndexFunc
     indexers Indexers
-// indices maps a name to an Index
+    // indices maps a name to an Index
     indices Indices
 }
 ```
@@ -620,29 +618,31 @@ func LabelsIndexFunc(obj interface{}) ([]string, error) {
 }
 
 func TestIndexer(t *testing.T) {
-// 建立一个名为 app 的 Indexer, 并使用我们自己编写的 索引方法
+    // 建立一个名为 app 的 Indexer, 并使用我们自己编写的 索引方法
     idxs := Indexers{"app": LabelsIndexFunc}
 
-// 伪造2个pod资源
+    // 伪造2个pod资源
     pod1 := &v1.Pod{ObjectMeta: metav1.ObjectMeta{
- Name:      "pod1",
- Namespace: "ns1",
- Labels: map[string]string{
-  "app": "l1",
- }}}
+        Name:      "pod1",
+        Namespace: "ns1",
+        Labels: map[string]string{
+            "app": "l1",
+        }
+    }}
 
     pod2 := &v1.Pod{ObjectMeta: metav1.ObjectMeta{
- Name:      "pod2",
- Namespace: "ns2",
- Labels: map[string]string{
-  "app": "l2",
- }}}
-// 初始化 Indexer
+        Name:      "pod2",
+        Namespace: "ns2",
+        Labels: map[string]string{
+            "app": "l2",
+        }
+    }}
+    // 初始化 Indexer
     myIdx := NewIndexer(MetaNamespaceKeyFunc, idxs)
-// 添加pod
+    // 添加pod
     myIdx.Add(pod1)
     myIdx.Add(pod2)
-// 打印通过索引检索的资源
+    // 打印通过索引检索的资源
     fmt.Println(myIdx.IndexKeys("app", "l1"))
 
 }
@@ -688,18 +688,18 @@ func (this *CmdHandler) OnDelete(obj interface{}) {
 
 func main() {
     cliset := config.NewK8sConfig().InitClient()
-// 通过 clientset 返回一个 listwatcher, 仅支持 default/configmaps 资源
+    // 通过 clientset 返回一个 listwatcher, 仅支持 default/configmaps 资源
     listWatcher := cache.NewListWatchFromClient(
         cliset.CoreV1().RESTClient(),
         "configmaps",
         "default",
         fields.Everything(),
     )
-// 初始化一个informer, 传入了监听器, 资源名, 间隔同步时间
-// 最后一个是我们定义的 Handler 用于接收我们监听的资源变更事件;
+    // 初始化一个informer, 传入了监听器, 资源名, 间隔同步时间
+    // 最后一个是我们定义的 Handler 用于接收我们监听的资源变更事件;
     _, c := cache.NewInformer(listWatcher, &v1.ConfigMap{}, 0, &CmdHandler{})
 
-// 启动循环监听
+    // 启动循环监听
     c.Run(wait.NeverStop)
 }
 ```
@@ -713,7 +713,7 @@ func processDeltas(
     transformer TransformFunc,
     deltas Deltas,
 ) error {
-// from oldest to newest
+    // from oldest to newest
     for _, d := range deltas {
         ...
         switch d.Type {
@@ -757,20 +757,20 @@ func processDeltas(
 ...
 func main () {
     cliset := config.NewK8sConfig().InitClient()
-// 获取configmap
+    // 获取configmap
     listWatcher := cache.NewListWatchFromClient(
         cliset.CoreV1().RESTClient(),
         "configmaps",
         "default",
         fields.Everything(),
     )
-// CmdHandler 和上述的 EventHandler (参考 3.3.5)
+    // CmdHandler 和上述的 EventHandler (参考 3.3.5)
     store, controller := cache.NewInformer(listWatcher, &v1.ConfigMap{}, 0, &CmdHandler{})
-// 开启一个goroutine 避免主线程堵塞
+    // 开启一个goroutine 避免主线程堵塞
     go controller.Run(wait.NeverStop)
-// 等待3秒 同步缓存
+    // 等待3秒 同步缓存
     time.Sleep(3 * time.Second)
-// 从缓存中获取监听到的 configmap 资源
+    // 从缓存中获取监听到的 configmap 资源
     fmt.Println(store.List())
 
 }
@@ -810,23 +810,23 @@ func LabelsIndexFunc(obj interface{}) ([]string, error) {
 
 func main () {
     cliset := config.NewK8sConfig().InitClient()
-// 获取configmap
+    // 获取configmap
     listWatcher := cache.NewListWatchFromClient(
         cliset.CoreV1().RESTClient(),
         "configmaps",
         "default",
         fields.Everything(),
     )
-// 创建索引其并指定名字
+    // 创建索引其并指定名字
     myIndexer := cache.Indexers{"app": LabelsIndexFunc}
-// CmdHandler 和上述的 EventHandler (参考 3.3.5)
+    // CmdHandler 和上述的 EventHandler (参考 3.3.5)
     i, c := cache.NewIndexerInformer(listWatcher, &v1.Pod{}, 0, &CmdHandler{}, myIndexer)
-// 开启一个goroutine 避免主线程堵塞
+    // 开启一个goroutine 避免主线程堵塞
     go controller.Run(wait.NeverStop)
-// 等待3秒 同步缓存
+    // 等待3秒 同步缓存
     time.Sleep(3 * time.Second)
-// 通过 IndexStore 指定索引器获取我们需要的索引值
-// busy-box 索引值是由于 我在某个 pod 上打了一个 label 为 app: busy-box
+    // 通过 IndexStore 指定索引器获取我们需要的索引值
+    // busy-box 索引值是由于 我在某个 pod 上打了一个 label 为 app: busy-box
     objList, err := i.ByIndex("app", "busy-box")
     if err != nil {
         panic(err)
@@ -858,9 +858,9 @@ func main() {
         "default",
         fields.Everything(),
     )
-// 全量同步时间
+    // 全量同步时间
     shareInformer := cache.NewSharedInformer(listWarcher, &v1.ConfigMap{}, 0)
-// 可以增加多个Event handler
+    // 可以增加多个Event handler
     shareInformer.AddEventHandler(&handlers.CmdHandler{})
     shareInformer.AddEventHandler(&handlers.CmdHandler2{})
     shareInformer.Run(wait.NeverStop)
@@ -892,20 +892,20 @@ func main() {
     informerFactory := informers.NewSharedInformerFactoryWithOptions(
         cliset,
         0,
-// 指定的namespace 空间，如果需要所有空间，则不指定该参数
+    // 指定的namespace 空间，如果需要所有空间，则不指定该参数
         informers.WithNamespace("default"),
     )
-// 添加 ConfigMap 资源
+    // 添加 ConfigMap 资源
     cmGVR := schema.GroupVersionResource{
         Group:    "",
         Version:  "v1",
         Resource: "configmaps",
     }
     cmInformer, _ := informerFactory.ForResource(cmGVR)
-// 增加对 ConfigMap 事件的处理
+    // 增加对 ConfigMap 事件的处理
     cmInformer.Informer().AddEventHandler(&handlers.CmdHandler{})
 
-// 添加 Pod 资源
+    // 添加 Pod 资源
     podGVR := schema.GroupVersionResource{
         Group:    "",
         Version:  "v1",
@@ -913,12 +913,12 @@ func main() {
     }
     _, _ = informerFactory.ForResource(podGVR)
 
-// 启动 informerFactory
+    // 启动 informerFactory
     informerFactory.Start(wait.NeverStop)
-// 等待所有资源完成本地同步
+    // 等待所有资源完成本地同步
     informerFactory.WaitForCacheSync(wait.NeverStop)
 
-// 打印资源信息
+    // 打印资源信息
     listConfigMap, _ := informerFactory.Core().V1().ConfigMaps().Lister().List(labels.Everything())
     fmt.Println("Configmap:")
     for _, obj := range listConfigMap {
