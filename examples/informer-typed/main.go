@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,9 +28,6 @@ func main() {
 		options.LabelSelector = "foo=bar"
 	}))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cmInformer := factory.Core().V1().ConfigMaps()
 
 	cmInformer.Informer().AddEventHandler(&cache.ResourceEventHandlerFuncs{
@@ -51,9 +48,9 @@ func main() {
 		},
 	})
 
-	factory.Start(ctx.Done())
+	factory.Start(wait.NeverStop)
 
-	for gvr, ok := range factory.WaitForCacheSync(ctx.Done()) { // gvr?
+	for gvr, ok := range factory.WaitForCacheSync(wait.NeverStop) { // gvr?
 		if !ok {
 			panic(fmt.Sprintf("failed to sync cache for %v", gvr))
 		}
@@ -61,7 +58,8 @@ func main() {
 	}
 
 	// 通过 lister 获取所有的 configmap
-	cmobjs, err := cmInformer.Lister().List(labels.Everything())
+	//cmobjs, err := cmInformer.Lister().List(labels.Everything())
+	cmobjs, err := cmInformer.Lister().List(labels.SelectorFromSet(labels.Set{"foo": "bar"}))
 	// cmobjs, err := cmInformer.Lister().Get("dynamic-informer-cm")
 	if err != nil {
 		panic(err)
@@ -71,7 +69,5 @@ func main() {
 		fmt.Printf("cmobj: %s/%s\n", cmobj.GetNamespace(), cmobj.GetName())
 	}
 
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	<-wait.NeverStop
 }

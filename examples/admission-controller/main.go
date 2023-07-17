@@ -3,26 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strings"
-
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"log"
+	"net/http"
+	"os"
 )
 
 const (
 	certFile = "/etc/webhook/certs/tls.crt"
 	keyFile  = "/etc/webhook/certs/tls.key"
-)
-
-var (
-	dockerAccount           = os.Getenv("DOCKER_ACCPOUNT")
-	targetRegistryServer    = os.Getenv("TARGET_REGISTRY_SERVER")
-	targetRegistryNamespace = os.Getenv("TARGET_REGISTRY_NAMESPACE")
 )
 
 func init() {
@@ -34,9 +26,6 @@ func init() {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	if targetRegistryServer == "" || targetRegistryNamespace == "" {
-		log.Fatalln("env TARGET_REGISTRY_SERVER or TARGET_REGISTRY_NAMESPACE is empty.")
-	}
 }
 
 func main() {
@@ -47,20 +36,6 @@ func main() {
 	}
 }
 
-func replcacePodImages(pod *corev1.Pod) {
-	for i := range pod.Spec.Containers {
-		pod.Spec.Containers[i].Image = parseImage(pod.Spec.Containers[i].Image)
-	}
-
-	for i := range pod.Spec.InitContainers {
-		pod.Spec.InitContainers[i].Image = parseImage(pod.Spec.InitContainers[i].Image)
-	}
-
-	for i := range pod.Spec.EphemeralContainers {
-		pod.Spec.EphemeralContainers[i].Image = parseImage(pod.Spec.EphemeralContainers[i].Image)
-	}
-}
-
 func mutatePod(w http.ResponseWriter, r *http.Request) {
 	log.Println("request admission webhook mutating...")
 	var (
@@ -68,8 +43,7 @@ func mutatePod(w http.ResponseWriter, r *http.Request) {
 		pod                           = &corev1.Pod{}
 	)
 
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&reviewRequest); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&reviewRequest); err != nil {
 		log.Println("decode body failed.")
 		http.Error(w, fmt.Sprintf("could not decode body: %v", err), http.StatusBadRequest)
 		return
@@ -101,32 +75,22 @@ func mutatePod(w http.ResponseWriter, r *http.Request) {
 		}(),
 	}
 
-	if v, ok := pod.Labels["pk.io/webhook-test"]; ok && v == "true" {
+	if v, ok := pod.Labels["pk.poneding.com/echo-hello-sidecar"]; ok && v == "true" {
 		reviewResponse.Response.Result = &metav1.Status{
-			Message: "matched pod labels pk.io/webhook-test=true, migrate image to target registry.",
+			Message: "matched pod labels pk.poneding.com/echo-hello-sidecar=true, migrate image to target registry.",
 		}
 
-		replcacePodImages(pod)
+		tryRegisterSidecar(pod)
 
-		var patchs = []map[string]any{
-			{
-				"op":    "replace",
-				"path":  "/spec/containers",
-				"value": pod.Spec.Containers,
-			},
+		var patches = []map[string]any{
 			{
 				"op":    "replace",
 				"path":  "/spec/initContainers",
 				"value": pod.Spec.InitContainers,
 			},
-			{
-				"op":    "replace",
-				"path":  "/spec/ephemeralContainers",
-				"value": pod.Spec.EphemeralContainers,
-			},
 		}
 
-		patchBytes, err := json.Marshal(patchs)
+		patchBytes, err := json.Marshal(patches)
 		if err != nil {
 			log.Println("marshal patch failed.")
 			http.Error(w, fmt.Sprintf("could not marshal patch: %v", err), http.StatusInternalServerError)
@@ -143,11 +107,20 @@ func mutatePod(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parseImage(image string) string {
-	parts := strings.Split(image, "/")
-	if len(parts) != 2 || parts[0] != dockerAccount {
-		return image
+func tryRegisterSidecar(pod *corev1.Pod) {
+	for _, ic := range pod.Spec.InitContainers {
+		if ic.Name == "echo-hello-sidecar" {
+			return
+		}
 	}
 
-	return fmt.Sprintf("%s/%s/%s", targetRegistryServer, targetRegistryNamespace, parts[1])
+	pod.Spec.InitContainers = append(pod.Spec.InitContainers, corev1.Container{
+		Name:  "echo-hello-sidecar",
+		Image: "busybox",
+		Command: []string{
+			"/bin/sh",
+			"-c",
+			"echo hello",
+		},
+	})
 }
