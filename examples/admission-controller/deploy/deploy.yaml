@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-hello-sidecar-ctl
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: echo-hello-sidecar-ctl
+  template:
+    metadata:
+      labels:
+        app: echo-hello-sidecar-ctl
+    spec:
+      containers:
+        - name: controller
+          image: poneding/echo-hello-sidecar-admission-controller:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          ports:
+            - containerPort: 443
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /etc/webhook/certs/
+              readOnly: true
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: echo-hello-sidecar-ctl-cert
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-hello-sidecar-ctl
+  namespace: default
+spec:
+  selector:
+    app: echo-hello-sidecar-ctl
+  ports:
+    - port: 443
+      targetPort: 443
+  type: ClusterIP
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: echo-hello-sidecar-ctl
+  annotations:
+    cert-manager.io/inject-ca-from: default/echo-hello-sidecar-ctl-cert # 这是必要的，帮助重写 caBundle 字段值
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: ""
+      service:
+        name: echo-hello-sidecar-ctl
+        namespace: default
+        path: "/mutate"
+    failurePolicy: Fail
+    matchPolicy: Exact
+    name: echo-hello-sidecar-ctl.default.svc
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+        scope: '*'
+    objectSelector:
+      matchExpressions:
+        - key: pk.poneding.com/echo-hello-sidecar
+          operator: In
+          values:
+            - "true"
+    sideEffects: None
+    timeoutSeconds: 3

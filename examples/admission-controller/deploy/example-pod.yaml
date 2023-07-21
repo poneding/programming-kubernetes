@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: default
+  labels:
+    app: nginx
+    pk.poneding.com/echo-hello-sidecar: "true" # 这个 Label 用于标记该 Pod 需要被注入 echo-hello-sidecar
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+        - containerPort: 80

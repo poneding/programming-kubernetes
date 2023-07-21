@@ -29,7 +29,7 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/mutating", mutatePod)
+	http.HandleFunc("/mutate", mutatePod)
 	klog.Info("start serving admission webhook...")
 	if err := http.ListenAndServeTLS(":443", certFile, keyFile, nil); err != nil {
 		log.Fatalln("failed to listen and serve admission webhook.", err.Error())

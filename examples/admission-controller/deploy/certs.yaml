@@ -1,0 +1,29 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: echo-hello-sidecar-ctl-selfsigned-issuer
+  namespace: default
+spec:
+  selfSigned: {}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: echo-hello-sidecar-ctl-cert
+  namespace: default
+spec:
+  isCA: false
+  commonName: echo-hello-sidecar-ctl.default
+  dnsNames:
+    - echo-hello-sidecar-ctl
+    - echo-hello-sidecar-ctl.default
+    - echo-hello-sidecar-ctl.default.svc
+  secretName: echo-hello-sidecar-ctl-cert
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: echo-hello-sidecar-ctl-selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
