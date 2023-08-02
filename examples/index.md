@@ -4,6 +4,8 @@
 
 ## 示例清单
 
+[-> Admission Controller 示例](./admission-controller/README.md)
+
 [-> 代理 kube-apiserver 服务](./kube-proxy/README.md)
 
 [-> 标签选择器 LabelSelector](./label-selector/README.md)
