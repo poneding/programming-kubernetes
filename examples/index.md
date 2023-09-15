@@ -6,6 +6,8 @@
 
 [-> Admission Controller 示例](./admission-controller/README.md)
 
+[-> 自定 ApiServer 示例](./my-apiserver/README.md)
+
 [-> 代理 kube-apiserver 服务](./kube-proxy/README.md)
 
 [-> 标签选择器 LabelSelector](./label-selector/README.md)

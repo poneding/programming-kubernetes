@@ -1,0 +1,7 @@
+apiVersion: play.poneding.com/v1
+kind: Foo
+metadata:
+  name: example-foo
+  namespace: default
+spec:
+  msg: Hello, example-foo!

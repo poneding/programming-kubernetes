@@ -1,0 +1,88 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: my-apiserver-issuer
+  namespace: default
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: my-apiserver-cert
+  namespace: default
+spec:
+  isCA: false
+  commonName: my-apiserver.default
+  dnsNames:
+  - my-apiserver
+  - my-apiserver.default
+  - my-apiserver.default.svc
+  secretName: my-apiserver-cert
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: my-apiserver-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-apiserver
+  namespace: default
+  annotations:
+    cert-manager.io/inject-ca-from: default/my-apiserver-cert
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-apiserver
+  template:
+    metadata:
+      labels:
+        app: my-apiserver
+    spec:
+      containers:
+        - name: my-apiserver
+          image: registry.cn-hangzhou.aliyuncs.com/pding/my-apiserver:latest
+          ports:
+            - containerPort: 8443
+          env:
+          - name: CERT_DIR
+            value: /etc/my-apiserver-cert
+          volumeMounts:
+            - mountPath: /etc/my-apiserver-cert
+              name: cert
+      volumes:
+        - name: cert
+          secret:
+            secretName: my-apiserver-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-apiserver
+  namespace: default
+spec:
+  selector:
+    app: my-apiserver
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 8443
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.play.poneding.com
+spec:
+  group: play.poneding.com
+  groupPriorityMinimum: 1000
+  version: v1
+  versionPriority: 100
+  insecureSkipTLSVerify: true
+  service:
+    name: my-apiserver
+    namespace: default
