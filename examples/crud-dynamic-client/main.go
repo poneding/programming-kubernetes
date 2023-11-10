@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-
-	"golang.org/x/exp/maps"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
+	"maps"
 )
 
 func main() {
@@ -97,4 +96,15 @@ func main() {
 	}
 
 	fmt.Printf("Deleted ConfigMap %s/%s\n", namespace, updated.GetName())
+
+	// 自定义资源操作，需要集群中已经存在该自定义资源
+	// get, err := client.Resource(schema.GroupVersionResource{
+	// 	Group:    "kubevirt.io",
+	// 	Version:  "v1",
+	// 	Resource: "virtualmachines",
+	// }).Namespace(metav1.NamespaceDefault).Get(context.Background(), "testvm", metav1.GetOptions{})
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("get: %v\n", get.GetName())
 }
