@@ -14,7 +14,7 @@ kubectl apply -f https://raw.githubusercontent.com/poneding/programming-kubernet
 kubectl apply -f https://raw.githubusercontent.com/poneding/programming-kubernetes/master/examples/my-apiserver/example-pod.yaml
 ```
 
-## 操作 foo 资源：
+## 操作 foo 资源
 
 ```bash
 kubectl get foos.play.poneding.com

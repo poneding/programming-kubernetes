@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -10,7 +12,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
-	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,9 +53,9 @@ func setupInformers() {
 	fmt.Println("synced done.")
 }
 
-func main() {
-	listResources()
-}
+// func main() {
+// 	listResources()
+// }
 
 func listResources() {
 	// mycrs, err := myCRLister.ByNamespace(metav1.NamespaceDefault).List(labels.Everything())
