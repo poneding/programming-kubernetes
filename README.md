@@ -4,4 +4,6 @@
 
 [-> 编程示例](./examples/index.md)
 
+[-> 编程进阶](./advanced/index.md)
+
 [-> 收藏文章](./collected-articles/index.md)

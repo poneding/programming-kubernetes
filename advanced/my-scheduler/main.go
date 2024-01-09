@@ -1,23 +1,8 @@
-/*
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package controller
+package main
 
 import (
 	"context"
+	"log"
 	"math/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,22 +10,40 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-// PodReconciler reconciles a Pod object
-type PodReconciler struct {
-	client.Client
+func main() {
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{})
+	if err != nil {
+		log.Fatalf("new manager err: %s", err.Error())
+	}
+
+	err = (&MyScheduler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		log.Fatalf("setup scheduler err: %s", err.Error())
+	}
+
+	err = mgr.Start(context.Background())
+	if err != nil {
+		log.Fatalf("start manager err: %s", err.Error())
+	}
+}
+
+const mySchedulerName = "my-scheduler"
+
+type MyScheduler struct {
+	Client client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=core,resources=pods/finalizers,verbs=update
-
-func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (s *MyScheduler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	nodes := new(corev1.NodeList)
-	err := r.List(ctx, nodes)
+	err := s.Client.List(ctx, nodes)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -58,7 +61,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		Name:       targetNode,
 	}
 
-	err = r.Create(ctx, binding)
+	err = s.Client.Create(ctx, binding)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -67,13 +70,13 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (s *MyScheduler) SetupWithManager(mgr ctrl.Manager) error {
 	// 过滤目标 Pod
 	filter := predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			pod, ok := e.Object.(*corev1.Pod)
 			if ok {
-				return pod.Spec.SchedulerName == "my-scheduler" && pod.Spec.NodeName == ""
+				return pod.Spec.SchedulerName == mySchedulerName && pod.Spec.NodeName == ""
 			}
 			return false
 		},
@@ -87,5 +90,5 @@ func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Pod{}).
 		WithEventFilter(filter).
-		Complete(r)
+		Complete(s)
 }
