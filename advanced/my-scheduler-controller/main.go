@@ -20,28 +20,28 @@ func main() {
 		log.Fatalf("new manager err: %s", err.Error())
 	}
 
-	err = (&MyScheduler{
+	err = (&PodReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr)
 	if err != nil {
-		log.Fatalf("setup scheduler err: %s", err.Error())
+		log.Fatalf("setup scheduler controller err: %s", err.Error())
 	}
 
 	err = mgr.Start(context.Background())
 	if err != nil {
-		log.Fatalf("start manager err: %s", err.Error())
+		log.Fatalf("start manager controller err: %s", err.Error())
 	}
 }
 
-const mySchedulerName = "my-scheduler"
+const mySchedulerName = "my-scheduler-controller"
 
-type MyScheduler struct {
+type PodReconciler struct {
 	Client client.Client
 	Scheme *runtime.Scheme
 }
 
-func (s *MyScheduler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (s *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	nodes := new(corev1.NodeList)
 	err := s.Client.List(ctx, nodes)
 	if err != nil {
@@ -70,7 +70,7 @@ func (s *MyScheduler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Res
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (s *MyScheduler) SetupWithManager(mgr ctrl.Manager) error {
+func (s *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// 过滤目标 Pod
 	filter := predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {

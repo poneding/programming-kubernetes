@@ -1,25 +1,17 @@
-# 定制调度器
+# 扩展调度器：定制调度控制器
 
-## 调度器的作用
+1. 实现一个简单的调度控制器，并指定调度器的名称为 `my-scheduler-controller`；
+2. 指定 `Pod.Spec.SchedulerName` 字段值为 `my-scheduler-controller`，这样 Pod 就会使用我们自定义的调度器。
 
-Kubernetes 的调度器是一个独立的进程，它负责将 Pod 调度到集群中的节点上。
-
-`kube-scheduler` 是 Kubernetes 集群的默认调度器，它会根据 Pod 的资源需求和节点的资源容量，将 Pod 调度到合适的节点上。
-
-## 实现一个简单的调度器
-
-1. 实现一个简单的调度器，并指定调度器的名称为 `my-scheduler`；
-2. 指定 `Pod.Spec.SchedulerName` 字段值为 `my-scheduler`，这样 Pod 就会使用我们自定义的调度器。
-
-### 调度器的实现
+## 实现
 
 编写一一个调度器，原理：通过协调 Pod ，选择一个适合的节点，创建 Binding 对象，将 Pod 绑定到指定的节点上。
 
 - 创建项目
 
 ```bash
-mkdir my-scheduler && cd my-scheduler
-go mod init my-scheduler
+mkdir my-scheduler-controller && cd my-scheduler-controller
+go mod init my-scheduler-controller
 touch main.go
 ```
 
@@ -48,28 +40,28 @@ func main() {
         log.Fatalf("new manager err: %s", err.Error())
     }
 
-    err = (&MyScheduler{
+    err = (&PodReconciler{
         Client: mgr.GetClient(),
         Scheme: mgr.GetScheme(),
     }).SetupWithManager(mgr)
     if err != nil {
-        log.Fatalf("setup scheduler err: %s", err.Error())
+        log.Fatalf("setup scheduler controller err: %s", err.Error())
     }
 
     err = mgr.Start(context.Background())
     if err != nil {
-        log.Fatalf("start manager err: %s", err.Error())
+        log.Fatalf("start manager controller err: %s", err.Error())
     }
 }
 
-const mySchedulerName = "my-scheduler"
+const mySchedulerName = "my-scheduler-controller"
 
-type MyScheduler struct {
+type PodReconciler struct {
     Client client.Client
     Scheme *runtime.Scheme
 }
 
-func (s *MyScheduler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (s *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
     nodes := new(corev1.NodeList)
     err := s.Client.List(ctx, nodes)
     if err != nil {
@@ -98,7 +90,7 @@ func (s *MyScheduler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Res
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (s *MyScheduler) SetupWithManager(mgr ctrl.Manager) error {
+func (s *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
     // 过滤目标 Pod
     filter := predicate.Funcs{
         CreateFunc: func(e event.CreateEvent) bool {
@@ -122,16 +114,30 @@ func (s *MyScheduler) SetupWithManager(mgr ctrl.Manager) error {
 }
 ```
 
-### 调度器的使用
+## 使用
 
 运行自定义调度器：
 
 ```bash
+# 本地运行
 go run main.go
+
+# 部署到集群
+kubectl apply -f deploy/manifests.yaml
 ```
 
-运行一个 Pod，指定调度器为 `my-scheduler`：
+运行一个 Pod，指定调度器为 `my-scheduler-controller`：
 
 ```bash
-kubectl run nginx-by-my-scheduler --image=nginx --overrides='{"spec":{"schedulerName":"my-scheduler"}}'
+kubectl run nginx-by-my-scheduler-controller --image=nginx --overrides='{"spec":{"schedulerName":"my-scheduler-controller"}}'
 ```
+
+## 验证
+
+查看 Pod 信息：
+
+```bash
+kubectl get pod nginx-by-my-scheduler-controller -o wide
+```
+
+如果一切正常，Pod 将被正常调度到节点上。

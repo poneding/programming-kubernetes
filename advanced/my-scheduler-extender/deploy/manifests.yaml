@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-scheduler-with-extender
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: my-scheduler-with-extender
+subjects:
+- kind: ServiceAccount
+  name: my-scheduler-with-extender
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-scheduler-with-extender-config
+  namespace: kube-system
+data:
+  my-scheduler-with-extender-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1
+    kind: KubeSchedulerConfiguration
+    profiles:
+      - schedulerName: my-scheduler-with-extender
+    leaderElection:
+      leaderElect: false
+    extenders:
+    - urlPrefix: "http://my-scheduler-extender.kube-system.svc:8080"
+      enableHTTPS: false
+      filterVerb: "filter"
+      prioritizeVerb: "prioritize"
+      bindVerb: "bind"
+      weight: 1
+      nodeCacheCapable: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: my-scheduler-with-extender
+    tier: control-plane
+  name: my-scheduler-with-extender
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: my-scheduler-with-extender
+      tier: control-plane
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: my-scheduler-with-extender
+        tier: control-plane
+    spec:
+      serviceAccountName: my-scheduler-with-extender
+      containers:
+      - command:
+        - kube-scheduler
+        - --config=/etc/kubernetes/my-scheduler-with-extender/my-scheduler-with-extender-config.yaml
+        image: registry.k8s.io/kube-scheduler:v1.29.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+          initialDelaySeconds: 15
+        name: my-scheduler-with-extender
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+        resources:
+          requests:
+            cpu: '0.1'
+        securityContext:
+          privileged: false
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/kubernetes/my-scheduler-with-extender
+      hostNetwork: false
+      hostPID: false
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-scheduler-with-extender-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: my-scheduler-extender
+    tier: control-plane
+  name: my-scheduler-extender
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: my-scheduler-extender
+      tier: control-plane
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: my-scheduler-extender
+        tier: control-plane
+    spec:
+      serviceAccountName: my-scheduler-with-extender
+      containers:
+      - image: poneding/my-kube-scheduler-extender:v1.0
+        name: my-scheduler-extender
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-scheduler-extender
+  namespace: kube-system
+spec:
+  selector:
+    component: my-scheduler-extender
+    tier: control-plane
+  ports:
+  - port: 8080
+    targetPort: 8080

@@ -2,6 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"os"
+	"path"
+	"pk/advanced/my-apiserver/generated"
+	"strings"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
@@ -10,11 +16,6 @@ import (
 	apidiscovery "k8s.io/api/apidiscovery/v2beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kube-openapi/pkg/validation/spec"
-	"net/http"
-	"os"
-	"path"
-	"pk/examples/my-apiserver/generated"
-	"strings"
 )
 
 func main() {
