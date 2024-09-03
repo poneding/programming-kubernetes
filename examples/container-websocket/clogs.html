@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Web Terminal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+    />
+    <style>
+      body,
+      html {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #1e1e1e;
+        overflow-y: hidden;
+      }
+      #terminal {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="terminal"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <!-- 引入 fit 插件 -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化 xterm.js 终端
+        const term = new Terminal({
+          cursorBlink: true, // 光标闪烁
+          scrollback: 1000, // 最大滚动行数
+          fontFamily: "monospace", // 设置字体
+          fontSize: 12, // 设置字体大小
+          convertEol: true, // 将 \r\n 转换为 \n
+          theme: {
+            background: "#1e1e1e", // 背景色
+            foreground: "#ffffff", // 前景色
+          },
+        });
+
+        // 适配插件，用于调整终端大小
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+
+        // 打开终端
+        term.open(document.getElementById("terminal"));
+        fitAddon.fit(); // 适应容器大小
+
+        // 监听窗口大小变化以调整终端
+        window.addEventListener("resize", () => fitAddon.fit());
+
+        // WebSocket 连接
+        const socket = new WebSocket("ws://localhost:8080/ws/clogs"); // 替换为你的服务器地址
+
+        socket.onopen = function () {
+          console.log("clogs websocket connection opened.");
+          // term.write("Connected to terminal.\r\n");
+        };
+
+        socket.onmessage = function (event) {
+          term.write(event.data);
+        };
+
+        socket.onerror = function (error) {
+          term.write(`Error: ${error.message}\r\n`);
+        };
+
+        term.onData(function (data) {
+          socket.send(data);
+        });
+
+        socket.onclose = function () {
+          console.log("clogs websocket connection closed.");
+          // term.write("\r\nConnection closed.\r\n");
+        };
+      });
+    </script>
+  </body>
+</html>

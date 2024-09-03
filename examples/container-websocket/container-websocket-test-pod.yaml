@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-websocket-test-pod
+spec:
+  containers:
+  - image: poneding/hello-app
+    name: test
+    resources: 
+      limits: 
+        cpu: "100m"
+        memory: "100Mi"
+  
