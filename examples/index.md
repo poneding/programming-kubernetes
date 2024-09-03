@@ -11,3 +11,5 @@
 [-> Pod 容器终端](./pod-exec/README.md)
 
 [-> Pod 容器日志](./pod-log/README.md)
+
+[-> 容器终端/日志](./container-websocket/README.md)
