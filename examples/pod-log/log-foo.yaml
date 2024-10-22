@@ -6,7 +6,9 @@ metadata:
   name: log-foo
 spec:
   containers:
-  - image: nginx
-    name: foo
-  dnsPolicy: ClusterFirst
-  restartPolicy: Always
+    - image: poneding/hello-app:v3
+      name: foo
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi

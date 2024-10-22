@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pod 日志</title>
+</head>
+
+<body>
+    <h1>Pod 日志</h1>
+    <button id="stopLogs">停止接收</button>
+    <pre id="logOutput"></pre>
+
+    <script>
+        // 使用 EventSource 来接收后端的SSE推送
+        const eventSource = new EventSource(`/logs`);
+
+        eventSource.onmessage = function (event) {
+            const logOutput = document.getElementById('logOutput');
+
+            logs = logOutput.textContent + event.data + '\n';
+
+            // 最多显示100行日志
+            logOutput.textContent = logs.split('\n').slice(-100).join('\n');
+        };
+
+        // 停止接收日志
+        document.getElementById('stopLogs').onclick = function () {
+            eventSource.close();
+            console.log('Stopped receiving logs');
+        };
+
+        // 错误处理
+        eventSource.onerror = function (event) {
+            // console.error("Error receiving logs:", event);
+        };
+    </script>
+</body>
+
+</html>
