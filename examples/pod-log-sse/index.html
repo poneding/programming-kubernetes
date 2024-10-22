@@ -7,33 +7,52 @@
     <title>Pod 日志</title>
 </head>
 
+<style>
+    #logs {
+        background-color: black;
+        color: white;
+        padding: 10px;
+    }
+</style>
+
 <body>
     <h1>Pod 日志</h1>
-    <button id="stopLogs">停止接收</button>
-    <pre id="logOutput" style="background-color: black; color: white;"></pre>
+    <button id="toggle">停止接收</button>
+    <pre id="logs"></pre>
 
     <script>
+        const logs = document.getElementById('logs');
         // 使用 EventSource 来接收后端的SSE推送
-        const eventSource = new EventSource(`/logs`);
+        let eventSource;
 
-        eventSource.onmessage = function (event) {
-            const logOutput = document.getElementById('logOutput');
+        connect();
 
-            logs = logOutput.textContent + event.data + '\n';
-
-            // 最多显示100行日志
-            logOutput.textContent = logs.split('\n').slice(-100).join('\n');
-        };
+        function connect() {
+            eventSource = new EventSource(`/logs`);
+            eventSource.onmessage = function (event) {
+                content = logs.textContent + event.data + '\n';
+                // 最多显示100行日志
+                logs.textContent = content.split('\n').slice(-100).join('\n');
+            };
+            eventSource.onerror = function (event) {
+                console.error("Error receiving logs:", event);
+            };
+        }
 
         // 停止接收日志
-        document.getElementById('stopLogs').onclick = function () {
-            eventSource.close();
-            console.log('Stopped receiving logs');
-        };
-
-        // 错误处理
-        eventSource.onerror = function (event) {
-            // console.error("Error receiving logs:", event);
+        const toggle = document.getElementById('toggle');
+        toggle.onclick = function () {
+            toggle.innerText = eventSource.readyState === 1 ? '继续接收' : '停止接收';
+            if (eventSource.readyState === 1) {
+                eventSource.close();
+                console.log('Stopped receiving logs');
+                toggle.innerText = '继续接收';
+                return;
+            } else {
+                connect();
+                console.log('Started receiving logs');
+                toggle.innerText = '停止接收';
+            }
         };
     </script>
 </body>
