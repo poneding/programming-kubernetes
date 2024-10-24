@@ -11,7 +11,7 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 )
 
-// SSE推送日志给前端
+// SSE 推送日志给前端
 func sseHandler(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -24,7 +24,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// 获取POD的namespace和name
+	// 获取 Pod 的 namespace 和 name
 	namespace := "default"
 	podName := "log-foo"
 
@@ -32,11 +32,11 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	config := controllerruntime.GetConfigOrDie()
 	client := kubernetes.NewForConfigOrDie(config)
 
-	// 获取Pod日志
+	// 获取 Pod 日志
 	tailLines := int64(100)
 	req := client.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
 		Follow:     true,       // 持续获取日志
-		TailLines:  &tailLines, // 获取最后100行日志
+		TailLines:  &tailLines, // 获取最后 100 行日志
 		Timestamps: true,       // 显示时间戳
 	})
 
@@ -69,7 +69,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
-	// 创建HTTP路由
+	// 创建 HTTP 路由
 	http.HandleFunc("/logs", sseHandler)
 
 	// 启动服务器
